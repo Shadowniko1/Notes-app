@@ -1,13 +1,15 @@
-# admin-gui
-just an Gui...
-YOU NEED TO INSTALL PYTHON 3.11 AND ADD TO PATH
-THAN OPEN CMD AND TYPE: pip install PyQt6
-THAN YOU CAN OPEN THE Gui
+СКАЧИВАТЬ НАДО С REALISES
 
-I DONT KNOW WHY IT OPENS WITH CMD BUT IF YOU WANT THE GUI DONT CLOSE THE CMD
+ДЛЯ ОТКРЫТИЯ ЭТОЙ GUI НАДО СКАЧАТЬ PYTHON (ФАЙЛ СНИЗУ) И ДОБАВИТЬ В PATH
+И КОГДА СКАЧАЕШЬ ОТКРОЙ КОМАНДНУЮ СТРОКУ И НАПИШИ ТУДА:
+pip install PyQt6 И pip install requests
 
-YOU CAN CHANGE THE SKRIPT (COMMANDS)
-YOU CAN CHANGE THE WALLPAPER (фон.png) (IT NEEDS TO BE PNG)
-GUI COMMANDS:
-"bongo": opens Bongo Cat (if you have it (on Steam)) 
-0: Secret mode 1: exit Secret mode
+И ПОТОМ МОЖЕШЬ ОТКРЫТЬ gui.py
+
+Я НЕЗНАЮ ПОЧЕМУ ОНО ОТКРЫВАЕТЬСЯ С КОМАНДНОЙ СТРОКОЙ
+ЕСЛИ ХОЧЕШЬ ТО МОЖЕШЬ ПОМЕНЯТЬ ФОН (фон.png) (надо .png файлы (другие непринимает))
+
+ОБНОВЛЕНИЕ:
+теперь gui сама обновляеться (но тебе надо нажать на да чтобы обновить (она ток спрашивает))
+
+ДЛЯ КОМАНД ЕСТЬ КОМАНДА .команды
