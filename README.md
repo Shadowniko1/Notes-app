@@ -1,2 +1,3 @@
 Its just a notes app...
 it isn't a virus
+(sorry no python version now)
