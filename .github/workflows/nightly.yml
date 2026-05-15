@@ -1,9 +1,12 @@
 name: Nightly Build
 
+
+# I left some comments explaining what stuff does incase you want to edit this workflow - cal
+
 on:
   push:
     branches:
-      - main               # runs when you push changes to main (update the code)
+      - main               # runs when you push changes to main
   workflow_dispatch:        # incase you want to run it manually
 
 permissions:
@@ -49,4 +52,5 @@ jobs:
           tag_name: nightly-${{ steps.date.outputs.date }}
           name: Nightly Build ${{ steps.date.outputs.date }}
           prerelease: true
+          make_latest: true        # marks this as the latest release for permalink
           files: dist/notes-app.exe
