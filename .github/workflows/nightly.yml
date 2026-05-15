@@ -1,0 +1,52 @@
+name: Nightly Build
+
+on:
+  push:
+    branches:
+      - main               # runs when you push changes to main (update the code)
+  workflow_dispatch:        # incase you want to run it manually
+
+permissions:
+  contents: write           # needed to upload release assets
+
+jobs:
+  build:
+    runs-on: windows-latest # this makes the windows executable
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Build executable
+        run: |
+          pyinstaller --onefile --name notes-app main.py
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(Get-Date -Format 'yyyy-MM-dd')" >> $env:GITHUB_OUTPUT
+
+      - name: Upload as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notes-app-${{ steps.date.outputs.date }}
+          path: dist/notes-app.exe
+          retention-days: 14
+
+      - name: Create nightly release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly-${{ steps.date.outputs.date }}
+          name: Nightly Build ${{ steps.date.outputs.date }}
+          prerelease: true
+          files: dist/notes-app.exe
