@@ -1,3 +1,5 @@
-Its just a notes app...
-it isn't a virus
-(sorry no python version now)
+# Notes-app
+A basic note-taking app written in python
+
+## Getting Started
+download the executable from 
