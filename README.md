@@ -4,7 +4,7 @@ A basic note-taking app written in python
 # Getting Started
 
 ## Windows
-Click [Here]9https://github.com/Shadowniko1/Notes-app/releases/latest/download/notes-app.exe) to download the latest Windows executable
+Click [Here](https://github.com/Shadowniko1/Notes-app/releases/latest/download/notes-app.exe) to download the latest Windows executable
 
 ## Building from Source
 building from source is required on operating systems other than Windows (MacOS, Linux, BSD, etc.)
