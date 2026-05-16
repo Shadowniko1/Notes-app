@@ -1,20 +1,46 @@
 name: Nightly Build
-
-
-# I left some comments explaining what stuff does incase you want to edit this workflow - cal
+# Builds Windows (.exe), Linux (.deb), macOS binaries, and Windows (.msi)
 
 on:
+  schedule:
+    - cron: "0 3 * * *"      # run nightly at 03:00 UTC
   push:
     branches:
       - main               # runs when you push changes to main
-  workflow_dispatch:        # incase you want to run it manually
+  workflow_dispatch:        # in case you want to run it manually
 
 permissions:
   contents: write           # needed to upload release assets
 
 jobs:
+
+  # Runs first so all three builds share the exact same date tag
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      date: ${{ steps.date.outputs.date }}
+    steps:
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
   build:
-    runs-on: windows-latest # this makes the windows executable
+    needs: setup
+    strategy:
+      fail-fast: false      # if one platform fails the others finish
+      matrix:
+        include:
+          - os: windows-latest
+            artifact-name: notes-app-windows
+            asset-path: dist/notes-app.exe
+          - os: ubuntu-latest
+            artifact-name: notes-app-linux
+            asset-path: notes-app.deb
+          - os: macos-latest
+            artifact-name: notes-app-macos
+            asset-path: dist/notes-app
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -32,25 +58,103 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build executable
+        run: pyinstaller --onefile --name notes-app main.py
+
+      # Linux only: wrap the PyInstaller binary in .deb using fpm
+      - name: Package as .deb (Linux)
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          pyinstaller --onefile --name notes-app main.py
+          gem install fpm --no-document
+          fpm \
+            --input-type dir \
+            --output-type deb \
+            --name notes-app \
+            --version 1.0.0 \
+            --package notes-app.deb \
+            --description "Notes App nightly build" \
+            dist/notes-app=/usr/local/bin/notes-app
 
-      - name: Get current date
-        id: date
-        run: echo "date=$(Get-Date -Format 'yyyy-MM-dd')" >> $env:GITHUB_OUTPUT
-
-      - name: Upload as artifact
+      - name: Upload build as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: notes-app-${{ steps.date.outputs.date }}
-          path: dist/notes-app.exe
+          name: ${{ matrix.artifact-name }}-${{ needs.setup.outputs.date }}
+          path: ${{ matrix.asset-path }}
           retention-days: 14
+
+  build_msi:
+    needs: [setup, build]
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download current workflow artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Validate EXE and derive MSI version
+        id: latest_nightly
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "dist\notes-app.exe")) {
+            throw "Current workflow artifact dist\notes-app.exe was not found."
+          }
+
+          Write-Host "Using notes-app.exe from the current workflow run."
+
+          $releaseDate = [datetime]::ParseExact("${{ needs.setup.outputs.date }}", "yyyy-MM-dd", [System.Globalization.CultureInfo]::InvariantCulture)
+          $releaseDate = $releaseDate.ToUniversalTime()
+
+          $major = 1
+          $minor = $releaseDate.Year - 2000
+          $build = $releaseDate.DayOfYear
+
+          if ($minor -lt 0 -or $minor -gt 255) {
+            throw "Computed MSI minor version '$minor' is outside MSI limits."
+          }
+
+          $msiVersion = "$major.$minor.$build"
+          "msi_version=$msiVersion" >> $env:GITHUB_OUTPUT
+          Write-Host "Using MSI version $msiVersion."
+
+      - name: Install WiX CLI
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix
+          $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+          wix --version
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+          wix build installer.wxs -arch x64 -d AppVersion=${{ steps.latest_nightly.outputs.msi_version }} -o dist\notes-app.msi
+
+      - name: Upload MSI as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notes-app-msi-${{ needs.setup.outputs.date }}
+          path: dist\notes-app.msi
+          retention-days: 14
+
+  # after all builds it makes a release
+  release:
+    needs: [setup, build, build_msi]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true  # one directory
 
       - name: Create nightly release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: nightly-${{ steps.date.outputs.date }}
-          name: Nightly Build ${{ steps.date.outputs.date }}
+          tag_name: nightly-${{ needs.setup.outputs.date }}
+          name: Nightly Build ${{ needs.setup.outputs.date }}
           prerelease: true
-          make_latest: true        # marks this as the latest release for permalink
-          files: dist/notes-app.exe
+          make_latest: true
+          files: artifacts/*

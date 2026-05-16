@@ -1,67 +1,61 @@
 # Notes-app
-A basic note-taking app written in python
+A basic note-taking app written in Python.
 
-# Getting Started
+## Getting Started
 
-## Windows
-Click [Here]9https://github.com/Shadowniko1/Notes-app/releases/latest/download/notes-app.exe) to download the latest Windows executable
+### Direct Downloads
 
-## Building from Source
-building from source is required on operating systems other than Windows (MacOS, Linux, BSD, etc.)
+**Windows (MSI installer)**  
+[Download latest MSI](https://github.com/Shadowniko1/Notes-app/releases/latest/download/notes-app.msi)
 
-### 1. Install Python
+**Other operating systems (Linux, macOS, etc.)**  
+Direct download assets are published on the latest release page:  
+[Browse latest release assets](https://github.com/Shadowniko1/Notes-app/releases/latest)
 
-Check if Python is installed:
+### Build It Yourself (from source)
+If your platform does not have a prebuilt release, run the app from source.
 
+1. Install Python and confirm it is available:
 ```bash
 python3 --version
 ```
-If you do not have Python installed, check how to install it [Here](https://www.python.org/downloads/).
+If needed, install Python from [python.org](https://www.python.org/downloads/).
 
-### 2. Clone the Repository
+2. Clone the repository:
 ```bash
 git clone https://github.com/Shadowniko1/Notes-app.git
 cd Notes-app
 ```
 
-### 3. Install Dependencies
-Install the required packages:
+3. Install dependencies:
 ```bash
 pip3 install -r requirements.txt
 ```
+If you get a permissions error:
+```bash
+pip3 install -r requirements.txt --user
+```
 
-> **Note:** If you get a permissions error, try adding `--user` to the command:
-> ```bash
-> pip3 install -r requirements.txt --user
-> ```
-
-### 4. Run the App
+4. Run the app:
 ```bash
 python3 main.py
 ```
 
----
-
 ### Platform-Specific Notes
 
-**macOS**
-If you run into a Tkinter error, you may need to install it separately. The easiest way is via [Homebrew](https://brew.sh/):
+**macOS**  
+If Tkinter is missing:
 ```bash
 brew install python-tk
 ```
 
-**Linux (Debian/Ubuntu)**
-```bash
-sudo apt install python3-tk
-```
-
-**Linux (Fedora/RHEL)**
+**Linux (Fedora/RHEL)**  
 ```bash
 sudo dnf install python3-tkinter
 ```
 
-**BSD**
+**BSD**  
 ```bash
 pkg install py311-tkinter
 ```
-*(Replace `py311` with your installed Python version.)*
+Replace `py311` with your installed Python version.

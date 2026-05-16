@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?define AppVersion = "1.0.0"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Notes App"
+           Version="$(var.AppVersion)"
+           Manufacturer="Shadowniko1"
+           UpgradeCode="f98b14a0-bb83-4a78-91d4-035d77a48ef1">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Notes App is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="Main">
+      <ComponentGroupRef Id="AppComponents" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLDIR" Name="Notes App" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="AppStartMenu" Name="Notes App" />
+      </Directory>
+    </Directory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="AppComponents" Directory="INSTALLDIR">
+      <Component>
+        <File Id="MainExe" Source="dist\notes-app.exe" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <Component Id="StartMenuShortcut" Directory="AppStartMenu">
+      <Shortcut Id="AppShortcut"
+                Name="Notes App"
+                Target="[INSTALLDIR]notes-app.exe"
+                WorkingDirectory="INSTALLDIR" />
+      <RemoveFolder Id="AppStartMenu" On="uninstall" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\NotesApp"
+                     Name="StartMenuShortcut"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+  </Fragment>
+</Wix>
