@@ -1,7 +1,9 @@
 name: Nightly Build
-# Builds Windows (.exe), Linux (.deb), and macOS binaries - cal
+# Builds Windows (.exe), Linux (.deb), macOS binaries, and Windows (.msi)
 
 on:
+  schedule:
+    - cron: "0 3 * * *"      # run nightly at 03:00 UTC
   push:
     branches:
       - main               # runs when you push changes to main
@@ -79,9 +81,81 @@ jobs:
           path: ${{ matrix.asset-path }}
           retention-days: 14
 
-  # after all 3 build it makes a release
+  build_msi:
+    needs: setup
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download latest nightly EXE and derive MSI version
+        id: latest_nightly
+        shell: pwsh
+        run: |
+          $headers = @{
+            Accept = "application/vnd.github+json"
+            "X-GitHub-Api-Version" = "2022-11-28"
+          }
+          $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/Shadowniko1/Notes-app/releases" -Headers $headers
+          $nightlyRelease = $releases |
+            Where-Object { $_.prerelease -and $_.tag_name -like "nightly-*" } |
+            Sort-Object { [datetime]$_.published_at } -Descending |
+            Select-Object -First 1
+
+          if (-not $nightlyRelease) {
+            throw "No nightly release found in Shadowniko1/Notes-app."
+          }
+
+          $exeAsset = $nightlyRelease.assets | Where-Object { $_.name -eq "notes-app.exe" } | Select-Object -First 1
+          if (-not $exeAsset) {
+            throw "No notes-app.exe asset found in release $($nightlyRelease.tag_name)."
+          }
+
+          New-Item -ItemType Directory -Force -Path "dist" | Out-Null
+          Invoke-WebRequest -Uri $exeAsset.browser_download_url -OutFile "dist\notes-app.exe"
+          Write-Host "Downloaded notes-app.exe from $($nightlyRelease.tag_name)."
+
+          $releaseDate = [datetime]$nightlyRelease.published_at
+          if ($nightlyRelease.tag_name -match '^nightly-(\d{4})-(\d{2})-(\d{2})$') {
+            $releaseDate = Get-Date -Year $Matches[1] -Month $Matches[2] -Day $Matches[3]
+          }
+          $releaseDate = $releaseDate.ToUniversalTime()
+
+          $major = 1
+          $minor = $releaseDate.Year - 2000
+          $build = $releaseDate.DayOfYear
+
+          if ($minor -lt 0 -or $minor -gt 255) {
+            throw "Computed MSI minor version '$minor' is outside MSI limits."
+          }
+
+          $msiVersion = "$major.$minor.$build"
+          "msi_version=$msiVersion" >> $env:GITHUB_OUTPUT
+          Write-Host "Using MSI version $msiVersion."
+
+      - name: Install WiX CLI
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix
+          $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+          wix --version
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+          wix build installer.wxs -arch x64 -d AppVersion=${{ steps.latest_nightly.outputs.msi_version }} -o dist\notes-app.msi
+
+      - name: Upload MSI as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notes-app-msi-${{ needs.setup.outputs.date }}
+          path: dist\notes-app.msi
+          retention-days: 14
+
+  # after all builds it makes a release
   release:
-    needs: [setup, build]
+    needs: [setup, build, build_msi]
     runs-on: ubuntu-latest
     steps:
       - name: Download all build artifacts
